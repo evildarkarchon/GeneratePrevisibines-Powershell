@@ -122,3 +122,4 @@ Invoke-ScriptAnalyzer -Path . -Recurse
 - Error handling is critical due to complex tool interactions
 - Make sure to keep the test suite and README.md up to date with new features and changes
 - This project must remain compatible with Windows PowerShell and PowerShell Core
+- Start-PrevisibineGeneration shall be the main entry point for the module as it best fits the intended use case
