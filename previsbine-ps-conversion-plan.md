@@ -67,6 +67,8 @@ GeneratePrevisibines/
   Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Bethesda Softworks\Fallout4"
   ```
 - [ ] Implement tool discovery with fallbacks
+- [ ] Implement path normalization
+- [ ] Add parameter selection for tool paths
 - [ ] Add MO2 detection logic
 - [ ] Create path validation functions
 
