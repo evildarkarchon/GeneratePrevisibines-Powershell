@@ -85,8 +85,8 @@ function New-BA2Archive {
     if ($WhatIf) {
         Write-Host "Would execute: $archiveToolPath $argumentString" -ForegroundColor Yellow
         return @{
-            Success = $true
-            Message = "WhatIf: Would create archive"
+            Success     = $true
+            Message     = "WhatIf: Would create archive"
             ArchivePath = $outputPath
         }
     }
@@ -100,14 +100,14 @@ function New-BA2Archive {
             
             # Start archive tool process
             $processInfo = @{
-                FilePath = $archiveToolPath
-                ArgumentList = $arguments
-                WorkingDirectory = Split-Path $archiveToolPath -Parent
-                Wait = $true
-                PassThru = $true
-                WindowStyle = 'Hidden'
+                FilePath               = $archiveToolPath
+                ArgumentList           = $arguments
+                WorkingDirectory       = Split-Path $archiveToolPath -Parent
+                Wait                   = $true
+                PassThru               = $true
+                WindowStyle            = 'Hidden'
                 RedirectStandardOutput = $archiveLogPath
-                RedirectStandardError = $archiveLogPath
+                RedirectStandardError  = $archiveLogPath
             }
             
             Write-LogMessage "Executing: $archiveToolPath $argumentString" -Level Info -LogPath $Config.LogPath
@@ -148,18 +148,18 @@ function New-BA2Archive {
                 Write-LogMessage "Archive created successfully: $outputPath ($archiveSize bytes)" -Level Info -LogPath $Config.LogPath
                 
                 return @{
-                    Success = $true
-                    Message = "Archive created successfully"
+                    Success     = $true
+                    Message     = "Archive created successfully"
                     ArchivePath = $outputPath
                     ArchiveSize = $archiveSize
-                    ExitCode = $exitCode
+                    ExitCode    = $exitCode
                 }
             }
             else {
                 Write-LogMessage "Archive file not found after creation: $outputPath" -Level Error -LogPath $Config.LogPath
                 return @{
-                    Success = $false
-                    Message = "Archive file not created"
+                    Success  = $false
+                    Message  = "Archive file not created"
                     ExitCode = $exitCode
                 }
             }

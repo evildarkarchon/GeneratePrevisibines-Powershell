@@ -22,7 +22,7 @@ function Get-ModToolPaths {
     [CmdletBinding()]
     param(
         [Parameter()]
-        [ValidateSet('FO4Edit', 'CreationKit', 'Archive2', 'BSArch', 'MO2', 'All')]
+        [ValidateSet('FO4Edit', 'CreationKit', 'Archive2', 'BSArch', 'MO2')]
         [string] $ToolName = 'All',
         
         [Parameter()]
@@ -76,41 +76,35 @@ function Get-FO4InstallPath {
     [CmdletBinding()]
     param()
     
-    $registryPaths = @(
-        'HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4',
-        'HKLM:\SOFTWARE\Bethesda Softworks\Fallout4',
-        'HKCR:\FO4Script\DefaultIcon'
-    )
+    $registryPath = 'HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4'
     
     # Try registry first
-    foreach ($regPath in $registryPaths) {
-        try {
-            if (Test-Path $regPath) {
-                $regKey = Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue
-                
-                # Check for common property names
-                $pathProperties = @('Installed Path', 'InstallPath', 'Path')
-                foreach ($prop in $pathProperties) {
-                    if ($regKey.$prop -and (Test-Path $regKey.$prop)) {
-                        Write-LogMessage "Found FO4 path in registry: $($regKey.$prop)" -Level Debug
-                        return $regKey.$prop
-                    }
+    try {
+        if (Test-Path $registryPath) {
+            $regKey = Get-ItemProperty -Path $registryPath -ErrorAction SilentlyContinue
+            
+            # Check for common property names
+            $pathProperties = @('Installed Path', 'InstallPath', 'Path')
+            foreach ($prop in $pathProperties) {
+                if ($regKey.$prop -and (Test-Path $regKey.$prop)) {
+                    Write-LogMessage "Found FO4 path in registry: $($regKey.$prop)" -Level Debug
+                    return $regKey.$prop
                 }
-                
-                # Handle DefaultIcon format (contains exe path)
-                if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
-                    $exePath = $matches[1]
-                    $installPath = Split-Path $exePath -Parent
-                    if (Test-Path $installPath) {
-                        Write-LogMessage "Found FO4 path from DefaultIcon: $installPath" -Level Debug
-                        return $installPath
-                    }
+            }
+            
+            # Handle DefaultIcon format (contains exe path)
+            if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
+                $exePath = $matches[1]
+                $installPath = Split-Path $exePath -Parent
+                if (Test-Path $installPath) {
+                    Write-LogMessage "Found FO4 path from DefaultIcon: $installPath" -Level Debug
+                    return $installPath
                 }
             }
         }
-        catch {
-            Write-LogMessage "Error reading registry path $regPath`: $_" -Level Debug
-        }
+    }
+    catch {
+        Write-LogMessage "Error reading registry path $registryPath`: $_" -Level Debug
     }
     
     # Try common Steam locations
@@ -155,7 +149,7 @@ function Find-FO4EditPath {
     
     # Try registry first
     try {
-        $regPath = 'HKCR:\FO4Script\Shell\Open\Command'
+        $regPath = 'HKCR:\FO4Script\DefaultIcon'
         if (Test-Path $regPath) {
             $regKey = Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue
             if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
@@ -329,8 +323,14 @@ function Find-BSArchPath {
             "C:\BSArch",
             "C:\Tools\BSArch"
         )
+
+        $fo4EditPath = Find-FO4EditPath -IncludeFallbacks:$IncludeFallbacks
+        if ($fo4EditPath) {
+            $searchPaths += Split-Path $fo4EditPath -Parent
+        }
         
         foreach ($basePath in $searchPaths) {
+            if (-not $basePath) { continue }
             $bsarchPath = Join-Path $basePath 'BSArch.exe'
             if (Test-Path $bsarchPath) {
                 Write-LogMessage "Found BSArch at: $bsarchPath" -Level Debug
