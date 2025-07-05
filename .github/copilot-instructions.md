@@ -120,3 +120,4 @@ Invoke-ScriptAnalyzer -Path . -Recurse
 - Must maintain compatibility with existing workflows
 - Registry access is required for path discovery
 - Error handling is critical due to complex tool interactions
+- Make sure to keep the test suite and README.md up to date with new features and changes
