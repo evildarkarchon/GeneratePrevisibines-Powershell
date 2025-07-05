@@ -10,9 +10,6 @@ function New-BA2Archive {
     .PARAMETER Config
     PrevisbineConfig object containing tool paths and settings.
     
-    .PARAMETER ArchiveType
-    Type of archive to create: 'Precombine' or 'Previs'.
-    
     .PARAMETER SourcePath
     Path to the source files to archive.
     
@@ -23,16 +20,12 @@ function New-BA2Archive {
     Shows what would be executed without actually running the process.
     
     .EXAMPLE
-    New-BA2Archive -Config $config -ArchiveType 'Precombine' -SourcePath "C:\Temp\Meshes" -ArchiveName "MyMod - Precombine.ba2"
+    New-BA2Archive -Config $config -SourcePath "C:\Temp\Meshes" -ArchiveName "MyMod - Main.ba2"
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)]
         [PrevisbineConfig] $Config,
-        
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('Precombine', 'Previs')]
-        [string] $ArchiveType,
         
         [Parameter(Mandatory = $true)]
         [string] $SourcePath,
@@ -44,7 +37,7 @@ function New-BA2Archive {
         [switch] $WhatIf
     )
     
-    Write-LogMessage "Creating $ArchiveType archive: $ArchiveName" -Level Info -LogPath $Config.LogPath
+    Write-LogMessage "Creating archive: $ArchiveName" -Level Info -LogPath $Config.LogPath
     
     if (-not (Test-Path $SourcePath)) {
         throw "Source path not found: $SourcePath"
@@ -93,17 +86,17 @@ function New-BA2Archive {
         Write-Host "Would execute: $archiveToolPath $argumentString" -ForegroundColor Yellow
         return @{
             Success = $true
-            Message = "WhatIf: Would create $ArchiveType archive"
+            Message = "WhatIf: Would create archive"
             ArchivePath = $outputPath
         }
     }
     
-    if ($PSCmdlet.ShouldProcess($ArchiveName, "Create $ArchiveType BA2 archive")) {
+    if ($PSCmdlet.ShouldProcess($ArchiveName, "Create BA2 archive")) {
         try {
             Write-LogMessage "Starting $($Config.ArchiveTool) archive creation..." -Level Info -LogPath $Config.LogPath
             
             # Prepare log file for archive tool output
-            $archiveLogPath = Join-Path $Config.WorkingDirectory "$($Config.ArchiveTool)_$ArchiveType.log"
+            $archiveLogPath = Join-Path $Config.WorkingDirectory "$($Config.ArchiveTool)_archive.log"
             
             # Start archive tool process
             $processInfo = @{
