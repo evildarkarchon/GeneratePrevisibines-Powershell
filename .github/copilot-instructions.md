@@ -121,3 +121,4 @@ Invoke-ScriptAnalyzer -Path . -Recurse
 - Registry access is required for path discovery
 - Error handling is critical due to complex tool interactions
 - Make sure to keep the test suite and README.md up to date with new features and changes
+- This project must remain compatible with Windows PowerShell and PowerShell Core
