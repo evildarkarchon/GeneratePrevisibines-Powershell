@@ -90,18 +90,28 @@ function Test-Prerequisites {
         }
     }
     
-    # Test CKPE configuration
-    $result = Test-CKPEConfiguration -Config $Config
-    if (-not $result.Success) {
-        $validationResults.Warnings += $result.Error
-    }
-    
     # Test plugin name validity
-    $result = Test-PluginName -PluginName $Config.PluginName
-    if (-not $result.Success) {
+    $pluginValidation = Test-PluginName -PluginName $Config.PluginName -FO4Directory $Config.FO4Directory
+    if (-not $pluginValidation.IsValid) {
         $validationResults.Success = $false
-        $validationResults.Errors += $result.Error
+        $validationResults.Errors += $pluginValidation.Errors
     }
+    $validationResults.Warnings += $pluginValidation.Warnings
+    
+    # Test CKPE configuration
+    $ckpeValidation = Test-CKPEConfiguration -CreationKitPath $Config.CreationKitPath
+    if (-not $ckpeValidation.IsValid) {
+        $validationResults.Success = $false
+        $validationResults.Errors += $ckpeValidation.Errors
+    }
+    $validationResults.Warnings += $ckpeValidation.Warnings
+    
+    # Test tool versions
+    $versionValidation = Test-ToolVersions -Config $Config
+    if (-not $versionValidation.IsValid) {
+        $validationResults.Warnings += $versionValidation.Errors
+    }
+    $validationResults.Warnings += $versionValidation.Warnings
     
     # Test disk space
     $result = Test-DiskSpace -WorkingDirectory $Config.WorkingDirectory

@@ -82,6 +82,13 @@ function Start-PrevisbineGeneration {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
         [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+                # Validate plugin name format
+                if (-not ($_ -match '\.(esp|esm|esl)$')) {
+                    throw "Plugin name must end with .esp, .esm, or .esl extension"
+                }
+                return $true
+            })]
         [string] $PluginName,
         
         [Parameter()]
@@ -89,9 +96,21 @@ function Start-PrevisbineGeneration {
         [string] $BuildMode = 'Clean',
         
         [Parameter()]
+        [ValidateScript({
+                if (-not (Test-Path $_ -PathType Container)) {
+                    throw "FO4Directory must be a valid directory path"
+                }
+                return $true
+            })]
         [string] $FO4Directory,
         
         [Parameter()]
+        [ValidateScript({
+                if (-not (Test-Path $_ -PathType Leaf)) {
+                    throw "FO4EditPath must be a valid file path"
+                }
+                return $true
+            })]
         [string] $FO4EditPath,
         
         [Parameter()]
@@ -117,7 +136,10 @@ function Start-PrevisbineGeneration {
         
         [Parameter()]
         [ValidateRange(1, 180)]
-        [int] $TimeoutMinutes = 60
+        [int] $TimeoutMinutes = 60,
+        
+        [Parameter()]
+        [switch] $SkipValidation
     )
     
     begin {
@@ -205,19 +227,24 @@ function Start-PrevisbineGeneration {
             # Validate prerequisites
             Write-ProgressMessage -Activity "Validating Prerequisites" -Status "Checking tools and configuration..." -PercentComplete 5 -LogPath $config.LogPath
             
-            $validationResult = Test-Prerequisites -Config $config
-            
-            if (-not $validationResult.Success) {
-                $errorMessage = "Prerequisites validation failed:`n" + ($validationResult.Errors -join "`n")
-                Write-LogMessage $errorMessage -Level Error -LogPath $config.LogPath
-                throw $errorMessage
-            }
-            
-            if ($validationResult.Warnings.Count -gt 0) {
-                foreach ($warning in $validationResult.Warnings) {
-                    Write-LogMessage $warning -Level Warning -LogPath $config.LogPath
-                    Write-Warning $warning
+            if (-not $SkipValidation) {
+                $validationResult = Test-Prerequisites -Config $config
+                
+                if (-not $validationResult.Success) {
+                    $errorMessage = "Prerequisites validation failed:`n" + ($validationResult.Errors -join "`n")
+                    Write-LogMessage $errorMessage -Level Error -LogPath $config.LogPath
+                    throw $errorMessage
                 }
+                
+                if ($validationResult.Warnings.Count -gt 0) {
+                    foreach ($warning in $validationResult.Warnings) {
+                        Write-LogMessage $warning -Level Warning -LogPath $config.LogPath
+                        Write-Warning $warning
+                    }
+                }
+            }
+            else {
+                Write-LogMessage "Skipping validation as requested" -Level Warning -LogPath $config.LogPath
             }
             
             # Display configuration summary
@@ -239,36 +266,53 @@ function Start-PrevisbineGeneration {
                 Write-ProgressMessage -Activity "Generating Precombines" -Status "Starting precombine generation..." -PercentComplete 10 -LogPath $config.LogPath
                 Write-LogMessage "Phase 1: Starting precombine generation" -Level Info -LogPath $config.LogPath
                 
-                # TODO: Implement Start-PrecombineGeneration
-                Write-LogMessage "Precombine generation not yet implemented" -Level Warning -LogPath $config.LogPath
+                $precombineResult = Start-PrecombineGeneration -Config $config
+                if (-not $precombineResult.Success) {
+                    throw "Precombine generation failed: $($precombineResult.Message)"
+                }
                 
                 # Phase 2: Plugin Processing
                 Write-ProgressMessage -Activity "Processing Plugin" -Status "Merging precombine objects..." -PercentComplete 30 -LogPath $config.LogPath
                 Write-LogMessage "Phase 2: Starting plugin processing" -Level Info -LogPath $config.LogPath
                 
-                # TODO: Implement Merge-PrecombineObjects
-                Write-LogMessage "Plugin processing not yet implemented" -Level Warning -LogPath $config.LogPath
+                $mergeResult = Merge-PrecombineObjects -Config $config
+                if (-not $mergeResult.Success) {
+                    throw "Precombine merge failed: $($mergeResult.Message)"
+                }
                 
                 # Phase 3: Archive Creation
                 Write-ProgressMessage -Activity "Creating Archives" -Status "Building BA2 archives..." -PercentComplete 50 -LogPath $config.LogPath
                 Write-LogMessage "Phase 3: Starting archive creation" -Level Info -LogPath $config.LogPath
                 
-                # TODO: Implement New-BA2Archive
-                Write-LogMessage "Archive creation not yet implemented" -Level Warning -LogPath $config.LogPath
+                $archiveName = "$($config.PluginName -replace '\.(esp|esm|esl)$', '') - Precombine.ba2"
+                $precombineArchivePath = Join-Path $config.WorkingDirectory "Precombine"
+                
+                $archiveResult = New-BA2Archive -Config $config -ArchiveType "Precombine" -SourcePath $precombineArchivePath -ArchiveName $archiveName
+                if (-not $archiveResult.Success) {
+                    Write-LogMessage "Archive creation failed: $($archiveResult.Message)" -Level Warning -LogPath $config.LogPath
+                }
                 
                 # Phase 4: Previs Generation
                 Write-ProgressMessage -Activity "Generating Previs" -Status "Creating visibility data..." -PercentComplete 70 -LogPath $config.LogPath
                 Write-LogMessage "Phase 4: Starting previs generation" -Level Info -LogPath $config.LogPath
                 
-                # TODO: Implement Start-PrevisGeneration
-                Write-LogMessage "Previs generation not yet implemented" -Level Warning -LogPath $config.LogPath
+                $previsResult = Start-PrevisGeneration -Config $config
+                if (-not $previsResult.Success) {
+                    throw "Previs generation failed: $($previsResult.Message)"
+                }
                 
                 # Phase 5: Final Assembly
                 Write-ProgressMessage -Activity "Final Assembly" -Status "Completing final steps..." -PercentComplete 90 -LogPath $config.LogPath
                 Write-LogMessage "Phase 5: Starting final assembly" -Level Info -LogPath $config.LogPath
                 
-                # TODO: Implement final assembly steps
-                Write-LogMessage "Final assembly not yet implemented" -Level Warning -LogPath $config.LogPath
+                # Create previs archive
+                $previsArchiveName = "$($config.PluginName -replace '\.(esp|esm|esl)$', '') - Previs.ba2"
+                $previsArchivePath = Join-Path $config.WorkingDirectory "Previs"
+                
+                $previsArchiveResult = New-BA2Archive -Config $config -ArchiveType "Previs" -SourcePath $previsArchivePath -ArchiveName $previsArchiveName
+                if (-not $previsArchiveResult.Success) {
+                    Write-LogMessage "Previs archive creation failed: $($previsArchiveResult.Message)" -Level Warning -LogPath $config.LogPath
+                }
                 
                 # Complete
                 Write-ProgressMessage -Activity "Complete" -Status "Previsbine generation batch process completed successfully" -PercentComplete 100 -LogPath $config.LogPath

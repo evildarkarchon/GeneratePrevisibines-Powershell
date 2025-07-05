@@ -98,8 +98,12 @@ class PrevisbineConfig {
         switch ($this.ArchiveTool) {
             'Archive2' { return $this.Archive2Path }
             'BSArch' { return $this.BSArchPath }
-            default { throw "Unknown archive tool: $($this.ArchiveTool)" }
+            default {
+                throw "Unknown archive tool: $($this.ArchiveTool)" # This should ideally not be reached due to ValidateSet
+            }
         }
+        # This should never be reached, but PowerShell requires all paths to return a value
+        return ""
     }
     
     # Get log directory
