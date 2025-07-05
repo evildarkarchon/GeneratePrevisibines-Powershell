@@ -112,7 +112,7 @@ GeneratePrevisibines/
 ## Phase 4: External Tool Integration
 
 ### 4.1 Creation Kit Wrapper
-- [ ] Convert `RunCK` function:
+- [ ] Convert `RunCK` function to work with CK's native logging:
   ```powershell
   function Invoke-CreationKit {
       param(
@@ -120,12 +120,33 @@ GeneratePrevisibines/
           [string]$OutputFile,
           [string]$Arguments
       )
-      # Implementation
+      
+      # Clear existing CK log file
+      if (Test-Path $CreationKitLogPath) {
+          Remove-Item $CreationKitLogPath -Force
+      }
+      
+      # Start CK without redirecting stdout/stderr
+      $ckProcess = Start-Process -FilePath $CreationKitPath `
+          -ArgumentList "-$Operation:`"$PluginName`" $Arguments" `
+          -WorkingDirectory (Split-Path $CreationKitPath) `
+          -PassThru `
+          -Wait
+      
+      # Monitor CK's native log file
+      if (Test-Path $CreationKitLogPath) {
+          $ckLog = Get-Content $CreationKitLogPath -Raw
+          # Check for specific errors
+          if ($ckLog -match "OUT OF HANDLE ARRAY ENTRIES") {
+              throw "Creation Kit ran out of reference handles"
+          }
+      }
   }
   ```
 - [ ] Handle DLL renaming for ENB compatibility
-- [ ] Implement log parsing for errors
-- [ ] Add timeout handling
+- [ ] Parse CKPE configuration to find log location
+- [ ] Monitor CK's native log file for errors
+- [ ] Add process completion detection
 
 ### 4.2 xEdit Script Execution
 - [ ] Convert `RunScript` function
