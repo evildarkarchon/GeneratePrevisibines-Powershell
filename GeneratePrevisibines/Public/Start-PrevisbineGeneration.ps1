@@ -18,6 +18,9 @@ function Start-PrevisbineGeneration {
     .PARAMETER FO4Directory
     Path to the Fallout 4 installation directory.
     
+    .PARAMETER FO4EditPath
+    Path to the FO4Edit executable (FO4Edit.exe or xEdit64.exe).
+    
     .PARAMETER UseBSArch
     Use BSArch instead of Archive2 for archive operations.
     
@@ -59,9 +62,9 @@ function Start-PrevisbineGeneration {
     Starts previsbine generation using Filtered mode, specifies FO4 directory, and uses BSArch for archives.
     
     .EXAMPLE
-    Start-PrevisbineGeneration -PluginName "MyMod.esp" -UseMO2 -MO2Profile "Default" -VerboseLogging
+    Start-PrevisbineGeneration -PluginName "MyMod.esp" -FO4EditPath "C:\Tools\FO4Edit\FO4Edit.exe" -VerboseLogging
     
-    Starts previsbine generation using MO2 integration with verbose logging enabled.
+    Starts previsbine generation with a custom FO4Edit path and verbose logging enabled.
     
     .NOTES
     This cmdlet orchestrates a complex batch process that requires the following external tools:
@@ -87,6 +90,9 @@ function Start-PrevisbineGeneration {
         
         [Parameter()]
         [string] $FO4Directory,
+        
+        [Parameter()]
+        [string] $FO4EditPath,
         
         [Parameter()]
         [switch] $UseBSArch,
@@ -149,6 +155,10 @@ function Start-PrevisbineGeneration {
             $config.WorkingDirectory = $WorkingDirectory
         }
         
+        if ($FO4EditPath) {
+            $config.FO4EditPath = $FO4EditPath
+        }
+        
         # Auto-detect tool paths
         Write-Host "Discovering tool paths..." -ForegroundColor Yellow
         $toolPaths = Get-ModToolPaths -IncludeFallbacks
@@ -158,7 +168,7 @@ function Start-PrevisbineGeneration {
             $config.DataDirectory = Join-Path $toolPaths.FO4Directory 'Data'
         }
         
-        if ($toolPaths.FO4Edit) {
+        if ($toolPaths.FO4Edit -and -not $config.FO4EditPath) {
             $config.FO4EditPath = $toolPaths.FO4Edit
         }
         
@@ -314,6 +324,9 @@ function Start-PrevisbineGeneration {
     .PARAMETER FO4Directory
     Path to the Fallout 4 installation directory.
     
+    .PARAMETER FO4EditPath
+    Path to the FO4Edit executable (FO4Edit.exe or xEdit64.exe).
+    
     .PARAMETER UseBSArch
     Use BSArch instead of Archive2 for archive operations.
     
@@ -355,9 +368,9 @@ function Start-PrevisbineGeneration {
     Generates precombines using Filtered mode, specifies FO4 directory, and uses BSArch for archives.
     
     .EXAMPLE
-    New-Previsbine -PluginName "MyMod.esp" -UseMO2 -MO2Profile "Default" -VerboseLogging
+    New-Previsbine -PluginName "MyMod.esp" -FO4EditPath "C:\Tools\FO4Edit\FO4Edit.exe" -VerboseLogging
     
-    Generates precombines using MO2 integration with verbose logging enabled.
+    Generates precombines with a custom FO4Edit path and verbose logging enabled.
     
     .NOTES
     This cmdlet requires the following external tools:
@@ -381,6 +394,9 @@ function Start-PrevisbineGeneration {
         
         [Parameter()]
         [string] $FO4Directory,
+        
+        [Parameter()]
+        [string] $FO4EditPath,
         
         [Parameter()]
         [switch] $UseBSArch,
@@ -424,6 +440,10 @@ function Start-PrevisbineGeneration {
             $config.DataDirectory = Join-Path $FO4Directory 'Data'
         }
         
+        if ($FO4EditPath) {
+            $config.FO4EditPath = $FO4EditPath
+        }
+        
         if ($UseBSArch) {
             $config.ArchiveTool = 'BSArch'
         }
@@ -452,7 +472,7 @@ function Start-PrevisbineGeneration {
             $config.DataDirectory = Join-Path $toolPaths.FO4Directory 'Data'
         }
         
-        if ($toolPaths.FO4Edit) {
+        if ($toolPaths.FO4Edit -and -not $config.FO4EditPath) {
             $config.FO4EditPath = $toolPaths.FO4Edit
         }
         
