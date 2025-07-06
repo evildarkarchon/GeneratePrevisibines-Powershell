@@ -204,9 +204,7 @@ GeneratePrevisibines/
 
 ### 6.2 Configuration Management
 - [ ] Add JSON/XML configuration file support
-- [ ] Implement profile system
 - [ ] Cache discovered paths
-- [ ] Add preset configurations
 
 ## Phase 7: Testing and Documentation
 
@@ -243,7 +241,6 @@ GeneratePrevisibines/
 - [ ] Test with various mod managers
 
 ### 8.3 Final Polish
-- [ ] Add telemetry/analytics (optional)
 - [ ] Implement update checking
 - [ ] Create installer script
 - [ ] Package for distribution
@@ -266,7 +263,6 @@ GeneratePrevisibines/
    - Advanced error handling
 
 4. **Nice-to-Have**
-   - Parallel processing
    - Configuration files
    - Update checking
 
