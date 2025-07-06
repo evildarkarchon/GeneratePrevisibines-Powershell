@@ -40,19 +40,23 @@ function Invoke-xEditScript {
     
     process {
         try {
-            # Build xEdit arguments
-            $xeditArgs = @()
-            
-            # Add script name
-            $xeditArgs += "-script:`"$ScriptName`""
-            
-            # Add script arguments
+            # Create plugins.txt file for xEdit
+            $pluginsFile = Join-Path $env:TEMP "Plugins.txt"
+            $pluginsContent = @()
             foreach ($arg in $Arguments) {
-                $xeditArgs += "`"$arg`""
+                $pluginsContent += "*$arg"
             }
+            $pluginsContent | Out-File -FilePath $pluginsFile -Encoding ASCII
+            Write-LogMessage -Message "Created plugins file: $pluginsFile" -Level 'Debug' -LogPath $Config.LogPath
             
-            # Add unattended mode
-            $xeditArgs += "-nobuildrefs"
+            # Build xEdit arguments based on batch file pattern
+            $xeditArgs = @()
+            $xeditArgs += "-fo4"
+            $xeditArgs += "-autoexit"
+            $xeditArgs += "-P:`"$pluginsFile`""
+            $xeditArgs += "-Script:$ScriptName"
+            $xeditArgs += "-Mod:$($Arguments[0])"
+            $xeditArgs += "-log:`"$($Config.UnattenedLogfile)`""
             
             Write-LogMessage -Message "Running xEdit: $($Config.FO4EditPath) $($xeditArgs -join ' ')" -Level 'Info' -LogPath $Config.LogPath
             
@@ -62,12 +66,72 @@ function Invoke-xEditScript {
                 Write-LogMessage -Message "Cleared existing xEdit log file" -Level 'Debug' -LogPath $Config.LogPath
             }
             
-            # Start xEdit process
+            # Start xEdit process in background
             $xeditProcess = Start-Process -FilePath $Config.FO4EditPath `
                 -ArgumentList $xeditArgs `
                 -WorkingDirectory (Split-Path $Config.FO4EditPath -Parent) `
-                -PassThru `
-                -Wait
+                -PassThru
+            
+            # Wait a bit for xEdit to start
+            Start-Sleep -Seconds 10
+            
+            # Send keypresses to handle xEdit's UI (like the batch file does)
+            $xeditProcessName = [System.IO.Path]::GetFileNameWithoutExtension($Config.FO4EditPath)
+            try {
+                Add-Type -AssemblyName System.Windows.Forms
+                $wshell = New-Object -ComObject WScript.Shell
+                
+                # Wait for and activate xEdit window
+                Start-Sleep -Seconds 5
+                $wshell.AppActivate($xeditProcessName)
+                Start-Sleep -Seconds 1
+                $wshell.AppActivate("Module Selection")
+                $wshell.SendKeys("{ENTER}")
+                
+                Write-LogMessage -Message "Sent keypress to xEdit to start processing" -Level 'Debug' -LogPath $Config.LogPath
+            }
+            catch {
+                Write-LogMessage -Message "Warning: Could not send keypresses to xEdit: $($_.Exception.Message)" -Level 'Warning' -LogPath $Config.LogPath
+            }
+            
+            # Wait for log file to be created (indicates script is running)
+            $timeout = 300  # 5 minutes
+            $elapsed = 0
+            while (-not (Test-Path $Config.UnattenedLogfile) -and $elapsed -lt $timeout) {
+                Start-Sleep -Seconds 5
+                $elapsed += 5
+            }
+            
+            if (-not (Test-Path $Config.UnattenedLogfile)) {
+                Write-LogMessage -Message "xEdit log file not created within timeout" -Level 'Error' -LogPath $Config.LogPath
+                throw "xEdit script failed to start - no log file created"
+            }
+            
+            # Wait for process to complete
+            $xeditProcess.WaitForExit()
+            
+            # Try to close xEdit window gracefully
+            Start-Sleep -Seconds 10
+            try {
+                $processes = Get-Process -Name $xeditProcessName -ErrorAction SilentlyContinue
+                foreach ($proc in $processes) {
+                    $proc.CloseMainWindow()
+                }
+                
+                # Wait and then force kill if still running
+                Start-Sleep -Seconds 15
+                $processes = Get-Process -Name $xeditProcessName -ErrorAction SilentlyContinue
+                foreach ($proc in $processes) {
+                    Write-LogMessage -Message "Force killing xEdit process: $($proc.Id)" -Level 'Warning' -LogPath $Config.LogPath
+                    $proc.Kill()
+                }
+            }
+            catch {
+                Write-LogMessage -Message "Warning: Could not close xEdit processes: $($_.Exception.Message)" -Level 'Warning' -LogPath $Config.LogPath
+            }
+            
+            # Give MO2 time to move files around
+            Start-Sleep -Seconds 10
             
             Write-LogMessage -Message "xEdit process completed with exit code: $($xeditProcess.ExitCode)" -Level 'Info' -LogPath $Config.LogPath
             

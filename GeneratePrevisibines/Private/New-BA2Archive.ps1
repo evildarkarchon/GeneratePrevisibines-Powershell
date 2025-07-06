@@ -52,31 +52,33 @@ function New-BA2Archive {
     $outputPath = Join-Path $Config.DataDirectory $ArchiveName
     Write-LogMessage "Output archive path: $outputPath" -Level Info -LogPath $Config.LogPath
     
-    # Prepare arguments based on archive tool
+    # Prepare arguments based on archive tool and build mode
     $arguments = @()
     
     if ($Config.ArchiveTool -eq 'BSArch') {
-        # BSArch arguments
+        # BSArch arguments - matches batch file pattern
         $arguments += @(
-            'create'
-            '-ba2'
-            '-format:DDS'
-            '-compression:7'
-            '-multithreaded'
-            """$outputPath"""
-            """$SourcePath"""
+            'Pack'
+            "`"$SourcePath`""
+            "`"$outputPath`""
+            '-mt'       # Multi-threaded
+            '-fo4'      # Fallout 4 format
+            '-z'        # Compression
         )
     }
     else {
-        # Archive2 arguments
+        # Archive2 arguments - matches batch file pattern
         $arguments += @(
-            """$outputPath"""
-            '-create'
-            '-format:DDS'
-            '-compression:7'
-            '-root:""' + $SourcePath + '""'
-            '-file:""' + $SourcePath + '\**\*""'
+            "`"$SourcePath`""
+            "-c=`"$outputPath`""
+            '-f=General'
+            '-q'        # Quiet mode
         )
+        
+        # Add compression qualifiers based on build mode
+        if ($Config.BuildMode -eq 'Xbox') {
+            $arguments += '-compression=XBox'
+        }
     }
     
     $argumentString = $arguments -join ' '

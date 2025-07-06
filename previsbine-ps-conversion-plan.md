@@ -115,7 +115,7 @@ GeneratePrevisibines/
 ## Phase 4: External Tool Integration
 
 ### 4.1 Creation Kit Wrapper
-- [ ] Convert `RunCK` function to work with CK's native logging:
+- [x] Convert `RunCK` function to work with CK's native logging:
   ```powershell
   function Invoke-CreationKit {
       param(
@@ -146,22 +146,32 @@ GeneratePrevisibines/
       }
   }
   ```
-- [ ] Handle DLL renaming for ENB compatibility
-- [ ] Parse CKPE configuration to find log location
-- [ ] Monitor CK's native log file for errors
-- [ ] Add process completion detection
+- [x] Handle DLL renaming for ENB compatibility
+- [x] Parse CKPE configuration to find log location
+- [x] Monitor CK's native log file for errors
+- [x] Add process completion detection
 
 ### 4.2 xEdit Script Execution
-- [ ] Convert `RunScript` function
-- [ ] Implement automated keypress sending
-- [ ] Handle process monitoring
-- [ ] Parse script output logs
+- [x] Convert `RunScript` function with full batch file functionality:
+  - [x] Creates plugins.txt file for xEdit
+  - [x] Uses proper command line arguments: -fo4 -autoexit -P:"PluginsFile" -Script:ScriptName -Mod:ModName -log:LogFile
+  - [x] Implements automated keypress sending for xEdit UI
+  - [x] Handles process monitoring and cleanup
+  - [x] Parses script output logs for errors
+  - [x] Includes fallback process killing
 
 ### 4.3 Archive Tool Wrappers
-- [ ] Implement Archive2 wrapper
-- [ ] Implement BSArch wrapper
-- [ ] Handle file extraction/repacking
-- [ ] Add compression options
+- [x] Implement Archive2 wrapper with xbox compression support
+- [x] Implement BSArch wrapper with proper arguments
+- [x] Handle file extraction/repacking with Expand-BA2Archive
+- [x] Add compression options based on build mode
+- [x] Complex AddToArchive functionality for merging files
+
+### 4.4 Script and Tool Validation
+- [x] Added Test-xEditScripts function to validate required script versions:
+  - [x] Batch_FO4MergePrevisandCleanRefr.pas (V2.2)
+  - [x] Batch_FO4MergeCombinedObjectsAndCheck.pas (V1.5)
+  - [x] BSArch.exe detection in xEdit directory
 
 ## Phase 5: User Interface and Experience
 

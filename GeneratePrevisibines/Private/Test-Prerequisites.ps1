@@ -113,6 +113,14 @@ function Test-Prerequisites {
     }
     $validationResults.Warnings += $versionValidation.Warnings
     
+    # Test xEdit scripts
+    $scriptValidation = Test-xEditScripts -Config $Config
+    if (-not $scriptValidation.IsValid) {
+        $validationResults.Success = $false
+        $validationResults.Errors += $scriptValidation.Errors
+    }
+    $validationResults.Warnings += $scriptValidation.Warnings
+    
     # Test disk space
     $result = Test-DiskSpace -WorkingDirectory $Config.WorkingDirectory
     if (-not $result.Success) {
