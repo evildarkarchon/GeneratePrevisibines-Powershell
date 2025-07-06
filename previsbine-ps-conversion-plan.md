@@ -106,11 +106,11 @@ GeneratePrevisibines/
   - [x] `Start-PrecombineGeneration`
   - [x] `Merge-PrecombineObjects`
   - [x] `New-BA2Archive`
-  - [ ] `Compress-PSGFile`
-  - [ ] `Build-CDXFile`
+  - [x] `Compress-PSGFile`
+  - [x] `Build-CDXFile`
   - [x] `Start-PrevisGeneration`
-  - [ ] `Merge-PrevisESP`
-  - [ ] `Add-PrevisToArchive`
+  - [x] `Merge-PrevisESP`
+  - [x] `Add-PrevisToArchive`
 
 ## Phase 4: External Tool Integration
 
