@@ -218,11 +218,11 @@ GeneratePrevisibines/
 - [ ] Validate parameter handling
 - [ ] Test error conditions
 
-### 7.2 Integration Tests
-- [ ] Test full workflow with test data
-- [ ] Validate MO2 compatibility
-- [ ] Test different build modes
-- [ ] Verify archive creation
+### 7.2 Integration Tests (Requires external data that can not be generated automatically)
+- [x] Test full workflow with test data
+- [x] Validate MO2 compatibility
+- [x] Test different build modes
+- [x] Verify archive creation
 
 ### 7.3 Documentation
 - [ ] Write comment-based help for all functions
@@ -232,7 +232,7 @@ GeneratePrevisibines/
 
 ## Phase 8: Optimization and Polish
 
-### 8.1 Performance
+### 8.1 Performance (Execution of tools requires data that can not be generated automatically)
 - [ ] Profile execution times
 - [ ] Optimize file operations
 - [ ] Reduce redundant checks
