@@ -241,8 +241,6 @@ GeneratePrevisibines/
 ### 8.2 Compatibility
 - [ ] Test on Windows PowerShell 5.1
 - [ ] Test on PowerShell Core 7+
-- [ ] Validate with different FO4 versions
-- [ ] Test with various mod managers
 
 ### 8.3 Final Polish
 - [ ] Implement update checking
