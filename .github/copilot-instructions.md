@@ -123,3 +123,4 @@ Invoke-ScriptAnalyzer -Path . -Recurse
 - Make sure to keep the test suite and README.md up to date with new features and changes
 - This project must remain compatible with Windows PowerShell and PowerShell Core
 - Start-PrevisibineGeneration shall be the main entry point for the module as it best fits the intended use case
+- Keep all user-facing functionality in the main cmdlet file (Public folder)
