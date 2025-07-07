@@ -4,89 +4,170 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains a PowerShell conversion project for a Fallout 4 modding tool. The original GeneratePrevisibines.bat automates the generation of precombined meshes and visibility data (previsbines) using Creation Kit, xEdit, and Archive tools.
+GeneratePrevisibines-Powershell is a PowerShell module that automates the generation of Fallout 4 precombined meshes and visibility data (previsbines). It's a conversion of a 600+ line batch script into a modern PowerShell module with proper error handling, logging, and PowerShell native features.
 
-## Development Commands
+## Development Environment
 
-### PowerShell Module Development
-```powershell
-# Import module for testing (once created)
-Import-Module ./GeneratePrevisibines.psd1 -Force
+- Windows Subsystem for Linux (WSL) environment with access to Windows executables
+- PowerShell 7 installed and available
+- Development requires access to Fallout 4 modding tools (Creation Kit, xEdit, Archive tools)
 
-# Run Pester tests (once implemented)
-Invoke-Pester ./Tests/
+## Key Architecture Decisions
 
-# Check script analysis
-Invoke-ScriptAnalyzer -Path . -Recurse
-```
-
-### Testing the Original Batch Script
-```batch
-# Run with default settings
-GeneratePrevisibines.bat
-
-# Run with specific parameters
-GeneratePrevisibines.bat -clean -bsarch -FO4:C:\Games\Fallout4 MyPatch.esp
-```
-
-## Architecture & Key Components
-
-### Current State
-- **GeneratePrevisibines.bat**: 600+ line batch script that orchestrates multiple external tools
-- **previsbine-ps-conversion-plan.md**: Detailed conversion plan outlining the PowerShell module structure
-
-### Planned PowerShell Module Structure
+### Module Structure
 ```
 GeneratePrevisibines/
-├── GeneratePrevisibines.psd1  # Module manifest
-├── GeneratePrevisibines.psm1  # Main module
-├── Public/
-│   └── New-Previsbine.ps1     # Main cmdlet
-├── Private/
-│   ├── Get-ModToolPaths.ps1   # Registry/path detection
-│   ├── Test-Prerequisites.ps1  # Validation functions
-│   └── Write-LogMessage.ps1    # Logging functions
+├── GeneratePrevisibines.psd1      # Module manifest
+├── GeneratePrevisibines.psm1      # Module loader
 ├── Classes/
-│   └── PrevisbineConfig.ps1   # Configuration class
+│   └── PrevisbineConfig.ps1       # Central configuration class
+├── Public/
+│   └── Start-PrevisbineGeneration.ps1  # Main cmdlet (entry point)
+├── Private/                       # Internal functions (20+ files)
+│   ├── Tool wrappers (Invoke-CreationKit, Invoke-xEditScript)
+│   ├── Archive operations (New-BA2Archive, Expand-BA2Archive)
+│   ├── Workflow functions (Start-PrecombineGeneration)
+│   └── Utilities (Write-LogMessage, Test-Prerequisites)
 └── Tests/
-    └── GeneratePrevisibines.Tests.ps1
+    └── GeneratePrevisibines.Tests.ps1  # Pester test suite
 ```
 
-### External Dependencies
-- **xEdit64.exe/FO4Edit64.exe**: Script extender for Fallout 4 plugin manipulation
-- **CreationKit.exe**: Bethesda's official modding tool
-- **Archive2.exe/BSArch.exe**: Archive creation tools
-- **CKPE (CreationKitPlatformExtended)**: Creation Kit enhancement
+### External Tool Dependencies
+- **Creation Kit**: Bethesda's official modding tool (CreationKit.exe)
+- **xEdit/FO4Edit**: Plugin manipulation tool
+- **Archive Tools**: Archive2.exe (preferred) or BSArch.exe
+- **CKPE**: CreationKitPlatformExtended (optional enhancement)
 
-### Key Workflows
-1. **Precombine Generation**: Uses Creation Kit to generate optimized mesh data
-2. **Plugin Merging**: Uses xEdit scripts to merge ESP files
-3. **Archive Creation**: Packages files into BA2 archives
-4. **Previs Generation**: Creates visibility data for performance optimization
+## Critical Implementation Details
+
+### Tool Path Discovery
+The module uses registry-based tool discovery with fallback paths:
+```powershell
+# Registry paths checked:
+"HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4"
+"HKLM:\SOFTWARE\Bethesda Softworks\Fallout4"
+```
+
+### Configuration Management
+All settings flow through the `PrevisbineConfig` class which:
+- Validates all paths and settings
+- Manages build modes (Clean, Filtered, Xbox)
+- Handles Mod Organizer 2 integration
+- Provides centralized configuration for all functions
+
+### Error Handling Pattern
+```powershell
+try {
+    # Operation
+} catch {
+    Write-LogMessage -Message "Error: $_" -Level Error -Config $Config
+    throw "Failed to perform operation: $_"
+}
+```
 
 ## Development Guidelines
 
-### Registry Access
-The tool reads from Windows registry to locate Fallout 4 installation:
-- `HKLM:\SOFTWARE\Wow6432Node\Bethesda Softworks\Fallout4`
-- `HKCR\FO4Script\DefaultIcon`
+### PowerShell Best Practices
+- Use approved verbs for function names
+- Implement -WhatIf and -Confirm for destructive operations
+- Support pipeline input where appropriate
+- Use ShouldProcess for user confirmation
+- Avoid aliases in scripts
+- Use full parameter names
 
-### Error Handling Patterns
-- Check for required tools before execution
-- Validate directory states (empty/exists)
-- Parse Creation Kit logs for specific error patterns
-- Handle MO2 (Mod Organizer 2) file virtualization
-
-### PowerShell Conversion Considerations
-- Replace batch CHOICE prompts with Read-Host or menu systems
-- Convert ERRORLEVEL checks to try-catch blocks
-- Use Test-Path instead of IF EXIST
-- Implement proper parameter validation with ValidateSet attributes
-- Support -WhatIf and -Confirm for safety
+### Function Patterns
+```powershell
+function Verb-Noun {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [PrevisbineConfig]$Config
+    )
+    # Implementation
+}
+```
 
 ### Testing Requirements
-- Must test with actual Fallout 4 installation
-- Requires Creation Kit and xEdit tools
-- Test all build modes: clean, filtered, xbox
-- Verify MO2 compatibility
-- Test error recovery scenarios
+- All public functions must have Pester tests
+- Test coverage for error conditions
+- Mock external tool calls in tests
+- Validate parameter validation logic
+
+## Testing Commands
+
+```powershell
+# Run all tests
+Invoke-Pester .\GeneratePrevisibines\Tests\
+
+# Run with verbose output
+Invoke-Pester .\GeneratePrevisibines\Tests\ -Verbose
+
+# Import module for testing
+Remove-Module GeneratePrevisibines -Force -ErrorAction SilentlyContinue
+Import-Module .\GeneratePrevisibines\GeneratePrevisibines.psd1 -Force
+
+# Run code analysis
+Invoke-ScriptAnalyzer -Path .\GeneratePrevisibines\ -Recurse
+
+# Test the main cmdlet
+Start-PrevisbineGeneration -PluginName "TestMod.esp" -WhatIf
+```
+
+## Current Status
+
+### Completed Phases
+- Phase 1-4: Module structure, configuration, core functions, external tool integration
+- Interactive mode implementation
+- Comprehensive error handling and logging
+- Tool discovery and validation
+
+### In Progress
+- Phase 5: User Interface refinements
+- Additional test coverage
+- Performance optimizations
+
+### Pending
+- Phase 6-8: Advanced features, comprehensive testing, final optimizations
+- PowerShell Gallery publishing preparation
+
+## Common Development Tasks
+
+### Adding a New Private Function
+1. Create file in `Private/` directory
+2. Follow naming convention: `Verb-Noun.ps1`
+3. Add appropriate error handling and logging
+4. Function will auto-load via module loader
+
+### Modifying Tool Integration
+Tool wrapper functions in `Private/` follow a consistent pattern:
+- Accept `PrevisbineConfig` parameter
+- Use `Start-Process` with proper error handling
+- Log all operations
+- Return meaningful error messages
+
+### Working with the Configuration Class
+```powershell
+$config = [PrevisbineConfig]::new()
+$config.PluginName = "MyMod.esp"
+$config.BuildMode = "Clean"
+$config.IsValid()  # Validates all settings
+```
+
+## Troubleshooting
+
+### Module Won't Load
+```powershell
+# Check manifest validity
+Test-ModuleManifest .\GeneratePrevisibines\GeneratePrevisibines.psd1
+
+# Import with verbose to see errors
+Import-Module .\GeneratePrevisibines\GeneratePrevisibines.psd1 -Force -Verbose
+```
+
+### Tool Path Issues
+- Check registry entries for Fallout 4 installation
+- Verify tools exist in expected locations
+- Use `-SkipToolValidation` for testing without tools
+
+### Testing Without External Tools
+Many functions support `-SkipToolValidation` parameter for testing without actual tool installations.
