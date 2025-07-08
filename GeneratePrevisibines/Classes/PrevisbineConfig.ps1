@@ -1,5 +1,3 @@
-using namespace System.ComponentModel.DataAnnotations
-
 <#
 .SYNOPSIS
 Central configuration class for Fallout 4 previsbine generation operations.
@@ -218,7 +216,7 @@ class PrevisbineConfig {
         # Return validation result object
         return [PSCustomObject]@{
             IsValid = ($errors.Count -eq 0)
-            Errors = $errors
+            Errors  = $errors
         }
     }
     
@@ -276,25 +274,25 @@ class PrevisbineConfig {
     # Export configuration to JSON
     [string] ToJson() {
         $configData = @{
-            FO4EditPath = $this.FO4EditPath
-            CreationKitPath = $this.CreationKitPath
-            ArchiveTool = $this.ArchiveTool
-            Archive2Path = $this.Archive2Path
-            BSArchPath = $this.BSArchPath
-            BuildMode = $this.BuildMode
-            LogPath = $this.LogPath
-            FO4Directory = $this.FO4Directory
-            DataDirectory = $this.DataDirectory
-            PluginName = $this.PluginName
+            FO4EditPath      = $this.FO4EditPath
+            CreationKitPath  = $this.CreationKitPath
+            ArchiveTool      = $this.ArchiveTool
+            Archive2Path     = $this.Archive2Path
+            BSArchPath       = $this.BSArchPath
+            BuildMode        = $this.BuildMode
+            LogPath          = $this.LogPath
+            FO4Directory     = $this.FO4Directory
+            DataDirectory    = $this.DataDirectory
+            PluginName       = $this.PluginName
             WorkingDirectory = $this.WorkingDirectory
-            UseMO2 = $this.UseMO2
-            MO2Path = $this.MO2Path
-            MO2Profile = $this.MO2Profile
-            VerboseLogging = $this.VerboseLogging
-            KeepTempFiles = $this.KeepTempFiles
-            TimeoutMinutes = $this.TimeoutMinutes
-            ExportDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-            ExportVersion = '1.0'
+            UseMO2           = $this.UseMO2
+            MO2Path          = $this.MO2Path
+            MO2Profile       = $this.MO2Profile
+            VerboseLogging   = $this.VerboseLogging
+            KeepTempFiles    = $this.KeepTempFiles
+            TimeoutMinutes   = $this.TimeoutMinutes
+            ExportDate       = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            ExportVersion    = '1.0'
         }
         return ($configData | ConvertTo-Json -Depth 10)
     }
