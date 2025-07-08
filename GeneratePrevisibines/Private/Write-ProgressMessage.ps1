@@ -158,20 +158,16 @@ function Write-StepProgress {
     )
     
     $activity = "Previsbine Generation"
-    $stepStatus = "Step $StepNumber: $StepName - $Status"
+    $stepStatus = "Step ${StepNumber}: ${StepName} - ${Status}"
     $percentComplete = [int](($StepNumber / $TotalSteps) * 100)
     
     Write-Progress -Activity $activity -Status $stepStatus -PercentComplete $percentComplete
     
     # Also show in console with color
-    Write-Host "[$StepNumber/$TotalSteps] $StepName - $Status" -ForegroundColor Cyan
+    Write-Host "[${StepNumber}/${TotalSteps}] ${StepName} - ${Status}" -ForegroundColor Cyan
     
     # Log if path provided
     if ($LogPath) {
-        Write-LogMessage "Step $StepNumber/$TotalSteps - $StepName - $Status" -Level Info -LogPath $LogPath
-    }
-}
-        $progressMessage = "$Activity - $Status ($PercentComplete%)"
-        Write-LogMessage $progressMessage -Level Info -LogPath $LogPath
+        Write-LogMessage "Step ${StepNumber}/${TotalSteps} - ${StepName} - ${Status}" -Level Info -LogPath $LogPath
     }
 }

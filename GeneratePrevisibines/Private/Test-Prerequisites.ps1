@@ -37,7 +37,6 @@ function Test-Prerequisites {
     if (-not $Config.IsValid()) {
         $validationResults.Success = $false
         $validationResults.Errors += "Configuration validation failed"
-        return $validationResults
     }
     
     # Test tool availability
@@ -49,6 +48,12 @@ function Test-Prerequisites {
         )
         
         foreach ($tool in $toolTests) {
+            if ([string]::IsNullOrEmpty($tool.Path)) {
+                $validationResults.Success = $false
+                $validationResults.Errors += "$($tool.Name) not found at: $($tool.Path)"
+                continue
+            }
+            
             $result = Test-ToolAvailability -ToolName $tool.Name -ToolPath $tool.Path
             if (-not $result.Success) {
                 $validationResults.Success = $false
@@ -68,6 +73,12 @@ function Test-Prerequisites {
     )
     
     foreach ($dir in $dirTests) {
+        if ([string]::IsNullOrEmpty($dir.Path)) {
+            $validationResults.Success = $false
+            $validationResults.Errors += "$($dir.Name) path is not set"
+            continue
+        }
+        
         $result = Test-DirectoryAccess -DirectoryName $dir.Name -DirectoryPath $dir.Path
         if (-not $result.Success) {
             $validationResults.Success = $false
@@ -133,8 +144,8 @@ function Test-Prerequisites {
     }
     else {
         Write-LogMessage "Prerequisite validation failed" -Level Error -LogPath $Config.LogPath
-        foreach ($error in $validationResults.Errors) {
-            Write-LogMessage "  ERROR: $error" -Level Error -LogPath $Config.LogPath
+        foreach ($validationError in $validationResults.Errors) {
+            Write-LogMessage "  ERROR: $validationError" -Level Error -LogPath $Config.LogPath
         }
     }
     
@@ -346,131 +357,7 @@ function Test-MO2Configuration {
     return $result
 }
 
-function Test-CKPEConfiguration {
-    <#
-    .SYNOPSIS
-    Tests Creation Kit Platform Extended configuration.
-    
-    .DESCRIPTION
-    Validates CKPE installation and configuration.
-    
-    .PARAMETER Config
-    PrevisbineConfig object containing CK settings.
-    
-    .EXAMPLE
-    Test-CKPEConfiguration -Config $config
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [PrevisbineConfig] $Config
-    )
-    
-    $result = @{
-        Success = $true
-        Error = $null
-        Warning = $null
-    }
-    
-    $ckDir = Split-Path $Config.CreationKitPath -Parent
-    $ckpeConfig = Join-Path $ckDir "CreationKitPlatformExtended.ini"
-    
-    if (-not (Test-Path $ckpeConfig)) {
-        $result.Success = $false
-        $result.Error = "CKPE configuration not found. Please install and configure CreationKitPlatformExtended."
-        return $result
-    }
-    
-    # Parse CKPE configuration to find log path
-    try {
-        $ckpeContent = Get-Content $ckpeConfig -ErrorAction Stop
-        $logSection = $false
-        
-        foreach ($line in $ckpeContent) {
-            if ($line -match '^\s*\[Log\]') {
-                $logSection = $true
-                continue
-            }
-            if ($line -match '^\s*\[' -and $logSection) {
-                break
-            }
-            if ($logSection -and $line -match '^\s*Directory\s*=\s*(.+)') {
-                $logDir = $matches[1].Trim()
-                if (-not (Test-Path $logDir -PathType Container)) {
-                    $result.Warning = "CKPE log directory does not exist: $logDir"
-                }
-            }
-        }
-    }
-    catch {
-        $result.Warning = "Could not parse CKPE configuration: $_"
-    }
-    
-    return $result
-}
 
-function Test-PluginName {
-    <#
-    .SYNOPSIS
-    Tests plugin name validity.
-    
-    .DESCRIPTION
-    Validates that plugin name follows proper naming conventions.
-    
-    .PARAMETER PluginName
-    Name of the plugin to validate.
-    
-    .EXAMPLE
-    Test-PluginName -PluginName "MyMod.esp"
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $PluginName
-    )
-    
-    $result = @{
-        Success = $true
-        Error = $null
-        Warning = $null
-    }
-    
-    # Check if plugin name is empty
-    if (-not $PluginName) {
-        $result.Success = $false
-        $result.Error = "Plugin name cannot be empty"
-        return $result
-    }
-    
-    # Check plugin extension
-    $validExtensions = @('.esp', '.esm', '.esl')
-    $extension = [System.IO.Path]::GetExtension($PluginName)
-    
-    if ($extension -notin $validExtensions) {
-        $result.Success = $false
-        $result.Error = "Plugin must have a valid extension (.esp, .esm, .esl): $PluginName"
-        return $result
-    }
-    
-    # Check for invalid characters
-    $invalidChars = [System.IO.Path]::GetInvalidFileNameChars()
-    foreach ($char in $invalidChars) {
-        if ($PluginName.Contains($char)) {
-            $result.Success = $false
-            $result.Error = "Plugin name contains invalid character '$char': $PluginName"
-            return $result
-        }
-    }
-    
-    # Check length
-    if ($PluginName.Length -gt 255) {
-        $result.Success = $false
-        $result.Error = "Plugin name is too long (max 255 characters): $PluginName"
-        return $result
-    }
-    
-    return $result
-}
 
 function Test-DiskSpace {
     <#

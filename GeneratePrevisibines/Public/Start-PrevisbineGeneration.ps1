@@ -51,6 +51,12 @@ function Start-PrevisbineGeneration {
     .PARAMETER StartFromStep
     Start from a specific step number (1-8). Useful for resuming after failures.
     
+    .PARAMETER ConfigurationFile
+    Path to a JSON configuration file to load settings from. This allows you to save and reuse configurations.
+    
+    .PARAMETER ConfigurationProfile
+    Name of a saved configuration profile to load from the user's profile directory (~/.GeneratePrevisibines/Profiles/).
+    
     .PARAMETER WhatIf
     Show what would be done without actually performing the operations.
     
@@ -77,6 +83,21 @@ function Start-PrevisbineGeneration {
     
     Starts the interactive process from step 4 (useful for resuming after a failure).
     
+    .EXAMPLE
+    Start-PrevisbineGeneration -ConfigurationFile ".\myconfig.json"
+    
+    Loads configuration from a JSON file and starts the generation process.
+    
+    .EXAMPLE
+    Start-PrevisbineGeneration -ConfigurationProfile "XboxBuild"
+    
+    Loads a saved configuration profile named "XboxBuild" from the user's profile directory.
+    
+    .EXAMPLE
+    "MyMod.esp", "AnotherMod.esp" | Start-PrevisbineGeneration -BuildMode Clean
+    
+    Processes multiple plugins using pipeline input with Clean build mode.
+    
     .NOTES
     This cmdlet orchestrates a complex batch process that requires the following external tools:
     - Creation Kit (CreationKit.exe)
@@ -97,7 +118,7 @@ function Start-PrevisbineGeneration {
     #>
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param(
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
         [ValidateScript({
                 if ($_ -and -not ($_ -match '\.(esp|esm|esl)$')) {
                     throw "Plugin name must end with .esp, .esm, or .esl extension"
@@ -161,7 +182,19 @@ function Start-PrevisbineGeneration {
         
         [Parameter()]
         [ValidateRange(1, 8)]
-        [int] $StartFromStep = 1
+        [int] $StartFromStep = 1,
+        
+        [Parameter()]
+        [ValidateScript({
+                if (-not (Test-Path $_ -PathType Leaf)) {
+                    throw "Configuration file not found: $_"
+                }
+                return $true
+            })]
+        [string] $ConfigurationFile,
+        
+        [Parameter()]
+        [string] $ConfigurationProfile
     )
     
     begin {
@@ -173,7 +206,19 @@ function Start-PrevisbineGeneration {
         }
         
         # Initialize configuration
-        $config = [PrevisbineConfig]::new()
+        $config = if ($ConfigurationFile) {
+            Write-Verbose "Loading configuration from file: $ConfigurationFile"
+            [PrevisbineConfig]::LoadFromFile($ConfigurationFile)
+        } elseif ($ConfigurationProfile) {
+            Write-Verbose "Loading configuration profile: $ConfigurationProfile"
+            $profilePath = Join-Path -Path $HOME -ChildPath ".GeneratePrevisibines\Profiles\$ConfigurationProfile.json"
+            if (-not (Test-Path $profilePath)) {
+                throw "Configuration profile not found: $ConfigurationProfile"
+            }
+            [PrevisbineConfig]::LoadFromFile($profilePath)
+        } else {
+            [PrevisbineConfig]::new()
+        }
         
         # Set configuration from parameters
         if ($PluginName) {

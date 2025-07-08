@@ -6,6 +6,9 @@ enum LogLevel {
     Critical = 4
 }
 
+# Module-level cache for log directories to optimize repeated directory checks
+$script:LogDirectoryCache = @{}
+
 function Write-LogMessage {
     <#
     .SYNOPSIS
@@ -85,10 +88,13 @@ function Write-LogMessage {
     # Write to file if path is specified
     if ($LogPath) {
         try {
-            # Ensure log directory exists
+            # Ensure log directory exists using cached check
             $logDir = Split-Path -Path $LogPath -Parent
-            if (-not (Test-Path $logDir)) {
-                New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+            if (-not $script:LogDirectoryCache.ContainsKey($logDir)) {
+                if (-not (Test-Path $logDir)) {
+                    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+                }
+                $script:LogDirectoryCache[$logDir] = $true
             }
             
             # Append to log file
@@ -172,60 +178,3 @@ function Stop-LogSession {
     Write-LogMessage $separator -Level Info -LogPath $LogPath -NoConsole
 }
 
-function Write-ProgressMessage {
-    <#
-    .SYNOPSIS
-    Writes a progress message with optional progress bar.
-    
-    .DESCRIPTION
-    Combines logging with progress bar display for long-running operations.
-    
-    .PARAMETER Activity
-    The activity being performed.
-    
-    .PARAMETER Status
-    The current status message.
-    
-    .PARAMETER PercentComplete
-    The percentage complete (0-100).
-    
-    .PARAMETER LogPath
-    Path to the log file.
-    
-    .PARAMETER LogLevel
-    Log level for the message.
-    
-    .EXAMPLE
-    Write-ProgressMessage -Activity "Generating Precombines" -Status "Processing plugins..." -PercentComplete 25
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Activity,
-        
-        [Parameter(Mandatory = $true)]
-        [string] $Status,
-        
-        [Parameter()]
-        [int] $PercentComplete = -1,
-        
-        [Parameter()]
-        [string] $LogPath,
-        
-        [Parameter()]
-        [LogLevel] $LogLevel = [LogLevel]::Info
-    )
-    
-    # Write to log
-    if ($LogPath) {
-        Write-LogMessage "$Activity - $Status" -Level $LogLevel -LogPath $LogPath -NoConsole
-    }
-    
-    # Show progress bar
-    if ($PercentComplete -ge 0) {
-        Write-Progress -Activity $Activity -Status $Status -PercentComplete $PercentComplete
-    }
-    else {
-        Write-Progress -Activity $Activity -Status $Status
-    }
-}

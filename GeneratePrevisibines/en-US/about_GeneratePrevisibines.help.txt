@@ -1,0 +1,201 @@
+TOPIC
+    about_GeneratePrevisibines
+
+SHORT DESCRIPTION
+    PowerShell module for generating Fallout 4 precombines and previs data using 
+    Creation Kit, xEdit, and Archive tools.
+
+LONG DESCRIPTION
+    The GeneratePrevisibines module provides a modern, PowerShell-native replacement 
+    for the original batch script functionality used to generate Fallout 4 precombined 
+    meshes and visibility data (previsbines).
+
+    This module automates the complex process of:
+    - Precombine generation using Creation Kit
+    - Previs generation using Creation Kit  
+    - Object merging using xEdit scripts
+    - BA2 archive creation using Archive2 or BSArch
+    - Mod Organizer 2 integration
+    - Comprehensive validation and error handling
+
+ARCHITECTURE
+    The module is built around a central configuration class (PrevisbineConfig) that
+    manages all settings and tool paths. Key components include:
+
+    - PrevisbineConfig Class: Central configuration management
+    - Start-PrevisbineGeneration: Main cmdlet entry point
+    - Tool Discovery: Automatic detection of required tools
+    - Workflow Functions: Step-by-step process automation
+    - Logging Framework: Comprehensive operation logging
+    - Validation System: Prerequisite and dependency checking
+
+SUPPORTED TOOLS
+    The module integrates with these external tools:
+
+    Creation Kit (CreationKit.exe)
+        - Bethesda's official modding tool
+        - Used for precombine and previs generation
+        - Requires CreationKitPlatformExtended (CKPE)
+
+    xEdit/FO4Edit  
+        - Plugin manipulation and merging tool
+        - Uses Batch_FO4MergePrevisandCleanRefr.pas script (V2.2+)
+        - Uses Batch_FO4MergeCombinedObjectsAndCheck.pas script (V1.5+)
+
+    Archive Tools
+        - Archive2.exe (preferred, from Creation Kit Tools)
+        - BSArch.exe (alternative archiving tool)
+        - Used for BA2 archive creation
+
+    Mod Organizer 2 (Optional)
+        - ModOrganizer.exe integration
+        - Profile-based mod management support
+
+BUILD MODES
+    The module supports three build modes:
+
+    Clean Mode
+        - Full clean build of all precombines and previs
+        - Generates maximum compatibility
+        - Longest generation time
+        - Compresses PSG files to CSG format
+
+    Filtered Mode  
+        - Uses filtering to optimize generation
+        - Faster than clean mode
+        - May miss some edge cases
+        - Good for most use cases
+
+    Xbox Mode
+        - Optimized for Xbox platform constraints
+        - Specialized settings for console compatibility
+        - Used for Xbox mod compatibility
+
+CONFIGURATION MANAGEMENT
+    The module uses the PrevisbineConfig class for configuration:
+
+    # Create new configuration
+    $config = [PrevisbineConfig]::new()
+    $config.PluginName = "MyMod.esp"
+    $config.BuildMode = "Clean"
+
+    # Save/load configurations
+    $config.SaveToFile("myconfig.json")
+    $loadedConfig = [PrevisbineConfig]::LoadFromFile("myconfig.json")
+
+    # Configuration validation
+    if ($config.IsValid()) {
+        # Configuration is ready to use
+    }
+
+TOOL PATH DISCOVERY
+    The module automatically discovers tool paths through:
+
+    1. Windows Registry Keys
+       - HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4
+       - HKLM:\SOFTWARE\Bethesda Softworks\Fallout4
+       - HKCR:\FO4Script\DefaultIcon (for FO4Edit)
+
+    2. Common Installation Locations
+       - Steam: %ProgramFiles(x86)%\Steam\steamapps\common\Fallout 4
+       - Bethesda Launcher locations
+       - Common tool directories
+
+    3. Fallback Search Paths
+       - Standard Program Files locations
+       - Common modding tool directories
+
+ERROR HANDLING AND VALIDATION
+    The module provides comprehensive error handling:
+
+    - Prerequisite validation before operations
+    - Tool availability and version checking
+    - File and directory permission validation
+    - Real-time process monitoring with timeout handling
+    - Detailed error messages with recovery suggestions
+    - Log file analysis for operation success/failure
+
+LOGGING SYSTEM
+    Multi-level logging with file and console output:
+
+    Log Levels: Debug, Info, Warning, Error, Critical
+    Features:
+    - Colored console output
+    - File logging with timestamps
+    - Session management with metadata
+    - Operation progress reporting
+    - Configurable verbosity levels
+
+COMMON WORKFLOWS
+    Basic Usage:
+        Start-PrevisbineGeneration -PluginName "MyMod.esp"
+
+    With Build Mode:
+        Start-PrevisbineGeneration -PluginName "MyMod.esp" -BuildMode Filtered
+
+    With MO2 Integration:
+        Start-PrevisbineGeneration -PluginName "MyMod.esp" -UseMO2 -MO2Profile "Default"
+
+    Testing (No Changes):
+        Start-PrevisbineGeneration -PluginName "MyMod.esp" -WhatIf
+
+    Verbose Logging:
+        Start-PrevisbineGeneration -PluginName "MyMod.esp" -VerboseLogging
+
+REQUIREMENTS
+    - PowerShell 5.1 or later
+    - Windows operating system (required for external tools)
+    - Creation Kit (from Bethesda)
+    - CreationKitPlatformExtended (CKPE)
+    - FO4Edit/xEdit with required scripts
+    - Archive2.exe or BSArch.exe
+
+TROUBLESHOOTING
+    Common Issues:
+
+    Tools Not Found
+        - Ensure Creation Kit, FO4Edit, and Archive tools are installed
+        - Check Windows registry entries for tool paths
+        - Use -IncludeFallbacks parameter for broader search
+
+    Registry Access
+        - Run PowerShell as Administrator if registry access fails
+        - Manually specify tool paths if auto-discovery fails
+
+    CKPE Configuration
+        - Ensure CKPE is properly installed and configured
+        - Check for winhttp.dll in Creation Kit directory
+        - Verify CKPE configuration file exists
+
+    Permissions
+        - Ensure write access to working directories
+        - Check Fallout 4 Data directory permissions
+        - Verify Creation Kit can write log files
+
+    For detailed troubleshooting, enable verbose logging:
+        Start-PrevisbineGeneration -PluginName "MyMod.esp" -VerboseLogging
+
+EXAMPLES
+    # Basic precombine and previs generation
+    Start-PrevisbineGeneration -PluginName "MyLandscapeMod.esp"
+
+    # Use filtered mode with BSArch
+    Start-PrevisbineGeneration -PluginName "MyMod.esp" -BuildMode Filtered -UseBSArch
+
+    # MO2 integration with custom profile
+    Start-PrevisbineGeneration -PluginName "MyMod.esp" -UseMO2 -MO2Profile "Testing"
+
+    # Custom paths and verbose logging
+    Start-PrevisbineGeneration -PluginName "MyMod.esp" `
+        -FO4Directory "D:\Games\Fallout 4" `
+        -VerboseLogging `
+        -KeepTempFiles
+
+    # Test configuration without making changes
+    Start-PrevisbineGeneration -PluginName "MyMod.esp" -WhatIf
+
+SEE ALSO
+    Start-PrevisbineGeneration
+    about_PrevisbineConfig
+    Get-Help Start-PrevisbineGeneration -Full
+    https://github.com/fallout4-modding-community

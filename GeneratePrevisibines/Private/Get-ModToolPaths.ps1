@@ -1,3 +1,46 @@
+# Module-level cache for registry lookups to optimize repeated queries
+$script:RegistryCache = @{}
+
+function Get-CachedRegistryValue {
+    <#
+    .SYNOPSIS
+    Gets a registry value with caching to improve performance.
+    
+    .PARAMETER Path
+    Registry path to read from.
+    
+    .PARAMETER Property
+    Property name to read (optional).
+    
+    .EXAMPLE
+    Get-CachedRegistryValue -Path "HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4"
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Path,
+        
+        [Parameter()]
+        [string] $Property
+    )
+    
+    $cacheKey = if ($Property) { "$Path::$Property" } else { $Path }
+    
+    if (-not $script:RegistryCache.ContainsKey($cacheKey)) {
+        try {
+            if ($Property) {
+                $script:RegistryCache[$cacheKey] = Get-ItemProperty -Path $Path -Name $Property -ErrorAction SilentlyContinue
+            } else {
+                $script:RegistryCache[$cacheKey] = Get-ItemProperty -Path $Path -ErrorAction SilentlyContinue
+            }
+        } catch {
+            $script:RegistryCache[$cacheKey] = $null
+        }
+    }
+    
+    return $script:RegistryCache[$cacheKey]
+}
+
 function Get-ModToolPaths {
     <#
     .SYNOPSIS
@@ -78,27 +121,29 @@ function Get-FO4InstallPath {
     
     $registryPath = 'HKLM:\SOFTWARE\WOW6432Node\Bethesda Softworks\Fallout4'
     
-    # Try registry first
+    # Try registry first using cached lookup
     try {
         if (Test-Path $registryPath) {
-            $regKey = Get-ItemProperty -Path $registryPath -ErrorAction SilentlyContinue
+            $regKey = Get-CachedRegistryValue -Path $registryPath
             
-            # Check for common property names
-            $pathProperties = @('Installed Path', 'InstallPath', 'Path')
-            foreach ($prop in $pathProperties) {
-                if ($regKey.$prop -and (Test-Path $regKey.$prop)) {
-                    Write-LogMessage "Found FO4 path in registry: $($regKey.$prop)" -Level Debug
-                    return $regKey.$prop
+            if ($regKey) {
+                # Check for common property names
+                $pathProperties = @('Installed Path', 'InstallPath', 'Path')
+                foreach ($prop in $pathProperties) {
+                    if ($regKey.$prop -and (Test-Path $regKey.$prop)) {
+                        Write-LogMessage "Found FO4 path in registry: $($regKey.$prop)" -Level Debug
+                        return $regKey.$prop
+                    }
                 }
-            }
-            
-            # Handle DefaultIcon format (contains exe path)
-            if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
-                $exePath = $matches[1]
-                $installPath = Split-Path $exePath -Parent
-                if (Test-Path $installPath) {
-                    Write-LogMessage "Found FO4 path from DefaultIcon: $installPath" -Level Debug
-                    return $installPath
+                
+                # Handle DefaultIcon format (contains exe path)
+                if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
+                    $exePath = $matches[1]
+                    $installPath = Split-Path $exePath -Parent
+                    if (Test-Path $installPath) {
+                        Write-LogMessage "Found FO4 path from DefaultIcon: $installPath" -Level Debug
+                        return $installPath
+                    }
                 }
             }
         }
@@ -147,12 +192,12 @@ function Find-FO4EditPath {
     
     $executableNames = @('FO4Edit.exe', 'FO4Edit64.exe', 'xEdit64.exe', 'xEdit.exe')
     
-    # Try registry first
+    # Try registry first using cached lookup
     try {
         $regPath = 'HKCR:\FO4Script\DefaultIcon'
         if (Test-Path $regPath) {
-            $regKey = Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue
-            if ($regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
+            $regKey = Get-CachedRegistryValue -Path $regPath
+            if ($regKey -and $regKey.'(default)' -and $regKey.'(default)' -match '^"([^"]+)"') {
                 $exePath = $matches[1]
                 if (Test-Path $exePath) {
                     Write-LogMessage "Found FO4Edit path in registry: $exePath" -Level Debug
@@ -405,6 +450,7 @@ function Resolve-ToolPath {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string] $Path,
         
         [Parameter(Mandatory = $true)]
