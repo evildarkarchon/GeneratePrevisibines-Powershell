@@ -1,11 +1,11 @@
 BeforeAll {
     # Import the module
-    $ModulePath = Join-Path $PSScriptRoot ".." "GeneratePrevisibines.psd1"
+    $ModulePath = Join-Path (Join-Path $PSScriptRoot "..") "GeneratePrevisibines.psd1"
     Import-Module $ModulePath -Force
     
     # Import private functions for testing
-    $PrivatePath = Join-Path $PSScriptRoot ".." "Private"
-    $ClassPath = Join-Path $PSScriptRoot ".." "Classes"
+    $PrivatePath = Join-Path (Join-Path $PSScriptRoot "..") "Private"
+    $ClassPath = Join-Path (Join-Path $PSScriptRoot "..") "Classes"
     
     # Import classes first
     $classFiles = Get-ChildItem -Path $ClassPath -Filter "*.ps1" -ErrorAction SilentlyContinue
@@ -67,7 +67,8 @@ Describe "PrevisbineConfig Class" {
                 $clone = $config.Clone()
                 $clone.PluginName | Should -Be "Test.esp"
                 $clone.BuildMode | Should -Be "Filtered"
-            } else {
+            }
+            else {
                 # Skip this test if Clone method doesn't exist
                 Set-ItResult -Skipped -Because "Clone method not implemented"
             }
@@ -521,12 +522,12 @@ Describe "Configuration Profile Functions" {
                 Mock Get-Content { return '{"PluginName":"TestMod.esp","BuildMode":"Clean","FO4EditPath":"/tmp/FO4Edit.exe","CreationKitPath":"/tmp/CreationKit.exe","FO4Directory":"/tmp/FO4","DataDirectory":"/tmp/FO4/Data"}' }
                 Mock ConvertFrom-Json { 
                     return [PSCustomObject]@{
-                        PluginName = "TestMod.esp"
-                        BuildMode = "Clean"
-                        FO4EditPath = "/tmp/FO4Edit.exe"
+                        PluginName      = "TestMod.esp"
+                        BuildMode       = "Clean"
+                        FO4EditPath     = "/tmp/FO4Edit.exe"
                         CreationKitPath = "/tmp/CreationKit.exe"
-                        FO4Directory = "/tmp/FO4"
-                        DataDirectory = "/tmp/FO4/Data"
+                        FO4Directory    = "/tmp/FO4"
+                        DataDirectory   = "/tmp/FO4/Data"
                     }
                 }
                 

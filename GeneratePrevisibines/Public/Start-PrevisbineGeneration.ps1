@@ -689,7 +689,7 @@ function Start-PrevisbineGeneration {
             # Handle known operational errors with specific recovery options
             $errorDetails = @{
                 Message = $_.Exception.Message
-                InnerException = $_.Exception.InnerException?.Message
+                InnerException = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $null }
                 StackTrace = $_.Exception.StackTrace
                 LogPath = $config.LogPath
             }
