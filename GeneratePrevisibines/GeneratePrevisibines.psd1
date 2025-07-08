@@ -86,7 +86,7 @@
             Tags = @('Fallout4', 'Modding', 'CreationKit', 'xEdit', 'Previs', 'Precombine', 'Gaming', 'Automation', 'Tools', 'Bethesda')
             
             # A URL to the license for this module
-            # LicenseUri = ''
+            LicenseUri = 'https://github.com/evildarkarchon/GeneratePrevisibines-Powershell/blob/main/LICENSE.md'
             
             # A URL to the main website for this project
             # ProjectUri = ''
